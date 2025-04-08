@@ -2,25 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import ccxt
-import os
-
-use_streamlit_secrets = False
-try:
-    if "BYBIT_API_KEY" in st.secrets:
-        use_streamlit_secrets = True
-        
-except:
-    use_streamlit_secrets = False
-
-if use_streamlit_secrets:
-    api_key = st.secrets["BYBIT_API_KEY"]
-    api_secret = st.secrets["BYBIT_API_SECRET"]
-else:
-    from dotenv import load_dotenv
-    load_dotenv()
-    api_key = os.getenv("BYBIT_API_KEY")
-    api_secret = os.getenv("BYBIT_API_SECRET")
-
 
 RISK_LEVELS = [
     {"limit": 100_000, "mmr": 0.02, "reduction": 0},
@@ -31,29 +12,22 @@ RISK_LEVELS = [
 ]
 
 
-st.set_page_config(page_title="Калькулятор ликвидации Bybit", layout="wide")
-st.title("Калькулятор цены ликвидации Bybit")
+st.set_page_config(page_title="Калькулятор ликвидации", layout="wide")
+st.title("Калькулятор цены ликвидации")
 
 
 try:
-    exchange = ccxt.bybit({
-        'apiKey': api_key,
-        'secret': api_secret,
-        'enableRateLimit': True,
-        'options': {
-            'defaultType': 'linear',
-        }
-    })
+    exchange = ccxt.binance()
 
 except Exception as e:
-    st.error(f"Ошибка при подключении к Bybit: {e}")
+    st.error(f"Ошибка при подключении к Binance: {e}")
     exchange = None
 
 
 def get_current_price(symbol):
     try:
         if exchange:
-            ticker = exchange.fetch_ticker(symbol)
+            ticker = exchange.fetch_ticker(symbol.replace("/", "").upper())
             return ticker['last']
         else:
             return 0
@@ -222,6 +196,6 @@ with st.expander("Информация о расчёте"):
 
 
 if exchange:
-    st.sidebar.success("✅ Подключено к Bybit")
+    st.sidebar.success("✅ Подключено к Binance")
 else:
-    st.sidebar.error("❌ Нет подключения к Bybit")
+    st.sidebar.error("❌ Нет подключения к Binance")
