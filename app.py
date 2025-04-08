@@ -11,14 +11,11 @@ RISK_LEVELS = [
     {"limit": 500_000, "mmr": 0.04, "reduction": 5000}
 ]
 
-
 st.set_page_config(page_title="Калькулятор ликвидации Bybit", layout="wide")
 st.title("Калькулятор цены ликвидации Bybit")
 
-
 try:
-    exchange = ccxt.binance()
-
+    exchange = ccxt.bybit()
 except Exception as e:
     st.error(f"Ошибка при подключении к Binance: {e}")
     exchange = None
@@ -108,7 +105,7 @@ def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
                       y1=y_val,
                       line=dict(color=color, width=2, dash="dash")
                       )
-        
+
         fig.add_annotation(x=df['timestamp'].max(),
                            y=y_val,
                            text=label,
@@ -123,8 +120,8 @@ def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
         "15m": "15-минутный",
         "1h": "Часовой",
         "1d": "Дневной"
+        }
     
-    }
     fig.update_layout(
         title=f"{symbol} - {tf_labels.get(timeframe, timeframe)} график",
         xaxis_title="Время",
