@@ -11,20 +11,23 @@ RISK_LEVELS = [
     {"limit": 500_000, "mmr": 0.04, "reduction": 5000}
 ]
 
-st.set_page_config(page_title="Калькулятор ликвидации", layout="wide")
-st.title("Калькулятор цены ликвидации")
+
+st.set_page_config(page_title="Калькулятор ликвидации Bybit", layout="wide")
+st.title("Калькулятор цены ликвидации Bybit")
+
 
 try:
-    exchange = ccxt.bybit()
+    exchange = ccxt.binance()
+
 except Exception as e:
-    st.error(f"Ошибка при подключении к Bybit: {e}")
+    st.error(f"Ошибка при подключении к Binance: {e}")
     exchange = None
 
 
 def get_current_price(symbol):
     try:
         if exchange:
-            ticker = exchange.fetch_ticker(symbol)
+            ticker = exchange.fetch_ticker(symbol.replace("/", "").upper())
             return ticker['last']
         else:
             return 0
@@ -225,6 +228,6 @@ with st.expander("Информация о расчёте"):
 
 
 if exchange:
-    st.sidebar.success("✅ Подключено к Bybit")
+    st.sidebar.success("✅ Подключено к Binance")
 else:
-    st.sidebar.error("❌ Нет подключения к Bybit")
+    st.sidebar.error("❌ Нет подключения к Binance")
