@@ -126,7 +126,7 @@ def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
         title=f"{symbol} - {tf_labels.get(timeframe, timeframe)} график",
         xaxis_title="Время",
         yaxis_title="Цена",
-        height=800,
+        height=600,
         xaxis_rangeslider_visible=False,
         dragmode="zoom",
         hovermode="x unified"
