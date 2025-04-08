@@ -2,6 +2,24 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import ccxt
+import os
+
+use_streamlit_secrets = False
+try:
+    if "BYBIT_API_KEY" in st.secrets:
+        use_streamlit_secrets = True
+        
+except:
+    use_streamlit_secrets = False
+
+if use_streamlit_secrets:
+    api_key = st.secrets["BYBIT_API_KEY"]
+    api_secret = st.secrets["BYBIT_API_SECRET"]
+else:
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv("BYBIT_API_KEY")
+    api_secret = os.getenv("BYBIT_API_SECRET")
 
 
 RISK_LEVELS = [
@@ -18,7 +36,15 @@ st.title("Калькулятор цены ликвидации Bybit")
 
 
 try:
-    exchange = ccxt.bybit()
+    exchange = ccxt.bybit({
+        'apiKey': api_key,
+        'secret': api_secret,
+        'enableRateLimit': True,
+        'options': {
+            'defaultType': 'linear',
+        }
+    })
+
 except Exception as e:
     st.error(f"Ошибка при подключении к Bybit: {e}")
     exchange = None
