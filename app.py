@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import ccxt
 
-
 RISK_LEVELS = [
     {"limit": 100_000, "mmr": 0.02, "reduction": 0},
     {"limit": 200_000, "mmr": 0.025, "reduction": 500},
@@ -12,10 +11,8 @@ RISK_LEVELS = [
     {"limit": 500_000, "mmr": 0.04, "reduction": 5000}
 ]
 
-
-st.set_page_config(page_title="Калькулятор ликвидации Bybit", layout="wide")
-st.title("Калькулятор цены ликвидации Bybit")
-
+st.set_page_config(page_title="Калькулятор ликвидации", layout="wide")
+st.title("Калькулятор цены ликвидации")
 
 try:
     exchange = ccxt.bybit()
@@ -43,7 +40,13 @@ def get_maintenance_margin(position_value):
     return RISK_LEVELS[-1]["mmr"], RISK_LEVELS[-1]["reduction"]
 
 
-def calculate_liquidation_price(entry_price, leverage, position_type, initial_deposit, support_investment):
+def calculate_liquidation_price(
+        entry_price,
+        leverage,
+        position_type,
+        initial_deposit,
+        support_investment
+    ):
     position_value = initial_deposit * leverage
     total_margin = initial_deposit + support_investment
 
@@ -52,47 +55,73 @@ def calculate_liquidation_price(entry_price, leverage, position_type, initial_de
 
     if position_type == "Long":
         return entry_price * (1 - (total_margin - maintenance_margin) / position_value)
-    else:  # Short
+
+    if position_type == "Short":
         return entry_price * (1 + (total_margin - maintenance_margin) / position_value)
 
 
-
-
 def get_historical_data(symbol, timeframe='15m'):
-    limit = {
-        "5m": 288, "15m": 192, "1h": 168, "1d": 60
+    candle_limit = {
+        "5m": 288,
+        "15m": 192,
+        "1h": 168,
+        "1d": 60
     }.get(timeframe, 100)
 
     try:
         if exchange:
-            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=candle_limit)
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             return df, True
         else:
             raise Exception("Биржа недоступна")
+        
     except Exception:
         st.error("❌ Биржа недоступна, невозможно загрузить график.")
         return None, False
 
-# График
+
 def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
     fig = go.Figure()
+
     fig.add_trace(go.Candlestick(
-        x=df['timestamp'], open=df['open'], high=df['high'],
-        low=df['low'], close=df['close'], name='Цена'
+        x=df['timestamp'],
+        open=df['open'],
+        high=df['high'],
+        low=df['low'],
+        close=df['close'],
+        name='Цена'
     ))
+
     for y_val, color, label in [
         (entry_price, "green", "Точка входа"),
         (liquidation_price, "red", "Цена ликвидации")
     ]:
-        fig.add_shape(type="line", x0=df['timestamp'].min(), y0=y_val,
-                      x1=df['timestamp'].max(), y1=y_val,
-                      line=dict(color=color, width=2, dash="dash"))
-        fig.add_annotation(x=df['timestamp'].max(), y=y_val,
-                           text=label, showarrow=True, arrowhead=1, ax=50, ay=0)
+        fig.add_shape(type="line",
+                      x0=df['timestamp'].min(),
+                      y0=y_val,
+                      x1=df['timestamp'].max(),
+                      y1=y_val,
+                      line=dict(color=color, width=2, dash="dash")
+                      )
+        
+        fig.add_annotation(x=df['timestamp'].max(),
+                           y=y_val,
+                           text=label,
+                           showarrow=True,
+                           arrowhead=1,
+                           ax=50,
+                           ay=0
+                           )
 
-    tf_labels = {"5m": "5-минутный", "15m": "15-минутный", "1h": "Часовой", "1d": "Дневной"}
+    tf_labels = {
+        "5m": "5-минутный",
+        "15m": "15-минутный",
+        "1h": "Часовой",
+        "1d": "Дневной"
+    
+    }
     fig.update_layout(
         title=f"{symbol} - {tf_labels.get(timeframe, timeframe)} график",
         xaxis_title="Время",
