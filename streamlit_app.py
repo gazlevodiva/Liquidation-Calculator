@@ -222,6 +222,6 @@ with st.expander("Информация о расчёте"):
 
 
 if exchange:
-    st.sidebar.success("✅ Подключено к Binance")
+    st.sidebar.success("✅ Подключено к Bybit")
 else:
-    st.sidebar.error("❌ Нет подключения к Binance")
+    st.sidebar.error("❌ Нет подключения к Bybit")
