@@ -17,11 +17,11 @@ st.title("Калькулятор цены ликвидации Bybit")
 try:
     exchange = ccxt.bybit()
 except Exception as e:
-    st.error(f"Ошибка при подключении к Binance: {e}")
+    st.error(f"Ошибка при подключении к Bybit: {e}")
     exchange = None
 
 
-def get_current_price(symbol):
+def get_current_price(symbol: str):
     try:
         if exchange:
             ticker = exchange.fetch_ticker(symbol.replace("/", "").upper())
@@ -33,7 +33,7 @@ def get_current_price(symbol):
         return 0
 
 
-def get_maintenance_margin(position_value):
+def get_maintenance_margin(position_value: float):
     for level in RISK_LEVELS:
         if position_value <= level["limit"]:
             return level["mmr"], level["reduction"]
@@ -60,39 +60,38 @@ def calculate_liquidation_price(
         return entry_price * (1 + (total_margin - maintenance_margin) / position_value)
 
 
-def get_historical_data(symbol, timeframe='15m'):
-    candle_limit = {
-        "5m": 288,
-        "15m": 192,
-        "1h": 168,
-        "1d": 60
-    }.get(timeframe, 100)
+def get_historical_data(symbol: str, timeframe='15m'):
+    candle_limit = 120
 
     try:
         if exchange:
-            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=candle_limit)
+            markets = exchange.load_markets()
+            if symbol not in markets:
+                st.error(f"❌ Символ {symbol} не найден на бирже")
+                return None, False
+
+            market_symbol = markets[symbol]["symbol"]
+            ohlcv = exchange.fetch_ohlcv(market_symbol, timeframe, limit=candle_limit)
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             return df, True
         else:
             raise Exception("Биржа недоступна")
-        
-    except Exception:
-        st.error("❌ Биржа недоступна, невозможно загрузить график.")
+
+    except Exception as e:
+        st.error(f"❌ Ошибка загрузки данных графика: {e}")
         return None, False
 
 
 def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
-    fig = go.Figure()
-
-    fig.add_trace(go.Candlestick(
+    fig = go.Figure(data=[go.Candlestick(
         x=df['timestamp'],
         open=df['open'],
         high=df['high'],
         low=df['low'],
         close=df['close'],
-        name='Цена'
-    ))
+        name=symbol
+    )])
 
     for y_val, color, label in [
         (entry_price, "green", "Точка входа"),
@@ -100,11 +99,10 @@ def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
     ]:
         fig.add_shape(type="line",
                       x0=df['timestamp'].min(),
-                      y0=y_val,
                       x1=df['timestamp'].max(),
+                      y0=y_val,
                       y1=y_val,
-                      line=dict(color=color, width=2, dash="dash")
-                      )
+                      line=dict(color=color, width=2, dash="dash"))
 
         fig.add_annotation(x=df['timestamp'].max(),
                            y=y_val,
@@ -112,16 +110,19 @@ def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
                            showarrow=True,
                            arrowhead=1,
                            ax=50,
-                           ay=0
-                           )
+                           ay=0)
+
+    min_price = min(df['low'].min(), entry_price, liquidation_price)
+    max_price = max(df['high'].max(), entry_price, liquidation_price)
+    padding = (max_price - min_price) * 0.1 if max_price > min_price else 1
 
     tf_labels = {
         "5m": "5-минутный",
         "15m": "15-минутный",
         "1h": "Часовой",
         "1d": "Дневной"
-        }
-    
+    }
+
     fig.update_layout(
         title=f"{symbol} - {tf_labels.get(timeframe, timeframe)} график",
         xaxis_title="Время",
@@ -129,8 +130,10 @@ def plot_chart(df, entry_price, liquidation_price, symbol, timeframe):
         height=600,
         xaxis_rangeslider_visible=False,
         dragmode="zoom",
-        hovermode="x unified"
+        hovermode="x unified",
+        yaxis=dict(range=[min_price - padding, max_price + padding])
     )
+
     return fig
 
 
@@ -164,28 +167,22 @@ if entry_price > 0 and leverage > 0 and initial_deposit > 0:
         col2.metric("Инвестиции", f"${(initial_deposit+support_investment):.2f}")
         col3.metric("Размер позиции", f"${position_size:.2f}")
         col4.metric("Расстояние до ликвидации:", f"{perc_diff:.2f}%")
-        col5.metric("Цена ликвидации", f"${liquidation_price:.2f}")     
+        col5.metric("Цена ликвидации", f"${liquidation_price:.2f}")
 
-        # Графики
         st.subheader("График цены")
         tabs = st.tabs(["1 день", "1 час", "15 минут", "5 минут"])
         timeframes = ["1d", "1h", "15m", "5m"]
 
-        if 'chart_data' not in st.session_state:
-            st.session_state.chart_data = {}
-
         with st.spinner("Загрузка графиков..."):
             for i, tf in enumerate(timeframes):
-                if tf not in st.session_state.chart_data:
-                    df, real = get_historical_data(symbol, tf)
-                    st.session_state.chart_data[tf] = (df, real)
-                else:
-                    df, real = st.session_state.chart_data[tf]
-
                 with tabs[i]:
-                    fig = plot_chart(df, entry_price, liquidation_price, symbol, tf)
-                    st.plotly_chart(fig, use_container_width=True)
-                    st.success("Данные реальные" if real else "Симуляция")
+                    df, real = get_historical_data(symbol, tf)
+                    if df is not None and not df.empty:
+                        fig = plot_chart(df, entry_price, liquidation_price, symbol, tf)
+                        st.plotly_chart(fig, use_container_width=True)
+                        st.success("Данные реальные" if real else "Симуляция")
+                    else:
+                        st.warning("Нет данных для отображения.")
 
 
 with st.expander("Информация о расчёте"):
