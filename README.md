@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ### 3. Запустить приложение
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run Home.py
 ```
 
 Приложение откроется в браузере: [http://localhost:8501](http://localhost:8501)
