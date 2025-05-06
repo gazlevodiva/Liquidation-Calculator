@@ -6,6 +6,15 @@ from modules.Indicators import Chart, CandlestickIndicator
 st.set_page_config(page_title="Точка входа", layout="wide")
 
 
+def get_available_symbols(dataset_dir="datasets"):
+    files = os.listdir(dataset_dir)
+    symbols = [
+        f.replace(".csv", "") for f in files
+        if f.endswith(".csv")
+    ]
+    return sorted(symbols)
+
+
 @st.cache_data
 def load_data(symbol: str):
     filename = f"{symbol}.csv"
@@ -23,12 +32,20 @@ def load_data(symbol: str):
     return df
 
 
+available_symbols = get_available_symbols()
 try:
-    symbol = st.text_input("Символ торговой пары", st.query_params['symbol'])
+    symbol = st.sidebar.selectbox("Выберите скачанную монету", [st.query_params['symbol']]+available_symbols)
 except KeyError:
-    symbol = st.text_input("Символ торговой пары", "BTCUSDT")
+    symbol = st.sidebar.selectbox("Выберите скачанную монету", available_symbols)
+
+
+# try:
+#     symbol = st.text_input("Символ торговой пары", st.query_params['symbol'])
+# except KeyError:
+#     symbol = st.text_input("Символ торговой пары", "BTCUSDT")
 
 df = load_data(symbol)
+
 
 st.sidebar.header("Параметры роста цены")
 window_size = st.sidebar.number_input(
@@ -72,8 +89,8 @@ for idx in raw_anomalies:
 anomaly_options = [df.loc[i, "timestamp"] for i in filtered_anomalies]
 
 if anomaly_options:
-    st.write(f"Найдено аномалий: {len(anomaly_options)}")
-    selected_timestamp = st.selectbox("Выберите дату аномалии", anomaly_options)
+    st.write(f"Найдено точек роста: {len(anomaly_options)}")
+    selected_timestamp = st.selectbox("Выберите дату: ", anomaly_options)
 
     selected_index = df[df["timestamp"] == selected_timestamp].index[0]
 
@@ -86,4 +103,4 @@ if anomaly_options:
     fig = chart.build()
     st.plotly_chart(fig, use_container_width=True)
 else:
-    st.warning("Аномалии не найдены. Попробуйте уменьшить порог изменения цены.")
+    st.warning("Роста по параметрам не найдено. Попробуйте уменьшить порог изменения цены.")

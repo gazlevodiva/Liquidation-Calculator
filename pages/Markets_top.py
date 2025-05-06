@@ -41,7 +41,10 @@ def show_top_in_table():
     df_view['Фандинг (%)'] = df_view['Фандинг (%)'].apply(lambda x: f"{x:.4f} %")
     df_view['Обновление фандинга'] = df_view['Обновление фандинга'].apply(lambda t: f"*{t}*")
 
-    # 5. Добавляем колонку с кнопкой-линком
+    df_view['Точки роста'] = df_view['Монета'].apply(
+        lambda s: f"[**Entry point**](/Entry_point?symbol={s})"
+    )
+
     df_view[''] = df_view['Монета'].apply(
         lambda s: f"[:orange[**Bybit**]](https://www.bybit.com/trade/usdt/{s})"
     )
@@ -54,7 +57,7 @@ def show_top_in_table():
     display_cols = [
         'Монета', 'Цена', 'Рост 24ч (%)',
         'Объём (млн) USDT', 'Фандинг (%)',
-        'Обновление фандинга', ''
+        'Обновление фандинга', 'Точки роста', ''
     ]
     df_display = df_view[display_cols]
 
