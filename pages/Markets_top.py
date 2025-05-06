@@ -7,7 +7,7 @@ from modules.data_loader import get_tickers
 
 
 st.set_page_config(page_title="Рост монет", layout="wide")
-st.title("Топ 10 монет по росту Bybit Derivatives")
+st.title("Рост Bybit Derivatives")
 
 st.sidebar.markdown("## Настройки отображения")
 
