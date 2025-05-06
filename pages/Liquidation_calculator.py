@@ -31,7 +31,7 @@ with st.sidebar:
     except KeyError:
         symbol = st.text_input("Символ торговой пары", "BTCUSDT")
 
-    symbol = normalize_symbol(symbol)
+    # symbol = normalize_symbol(symbol)
     current_price = get_ticker(symbol)['last']
 
     # --- Indicators ---
