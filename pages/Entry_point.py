@@ -32,17 +32,17 @@ def load_data(symbol: str):
     return df
 
 
-available_symbols = get_available_symbols()
-try:
-    symbol = st.sidebar.selectbox("Выберите скачанную монету", [st.query_params['symbol']]+available_symbols)
-except KeyError:
-    symbol = st.sidebar.selectbox("Выберите скачанную монету", available_symbols)
-
-
+# available_symbols = get_available_symbols()
 # try:
-#     symbol = st.text_input("Символ торговой пары", st.query_params['symbol'])
+#     symbol = st.sidebar.selectbox("Выберите скачанную монету", [st.query_params['symbol']]+available_symbols)
 # except KeyError:
-#     symbol = st.text_input("Символ торговой пары", "BTCUSDT")
+#     symbol = st.sidebar.selectbox("Выберите скачанную монету", available_symbols)
+
+
+try:
+    symbol = st.text_input("Символ торговой пары", st.query_params['symbol'])
+except KeyError:
+    symbol = st.text_input("Символ торговой пары", "BTCUSDT")
 
 df = load_data(symbol)
 
